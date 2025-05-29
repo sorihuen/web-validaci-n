@@ -52,7 +52,7 @@ const validarUsuario = async () => {
   loading.value = true;
 
   try {
-    const res = await fetch(`https://botai.smartdataautomation.com/api_backend_ai/dinamic-db/report/${cedula.value}/assesmentDEV`, {
+    const res = await fetch(`/api/dinamic-db/report/${cedula.value}/assesmentDEV`, {
       method: 'GET',
       headers,
     });
