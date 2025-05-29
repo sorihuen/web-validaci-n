@@ -7,9 +7,10 @@ const cedula = ref('');
 const loading = ref(false);
 const noEncontrado = ref(false);
 const errorCedula = ref(null);
+const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 
 const headers = {
-  Authorization: 'Token 790cfdfb568c8ca697c72f52d8fab5af63ede025',
+ 'Authorization': `Token ${API_TOKEN}`,
 };
 
 /**
@@ -57,7 +58,6 @@ const validarUsuario = async () => {
     });
 
     if (!res.ok) {
-      // Si la respuesta no es OK (ej. 404 Not Found)
       noEncontrado.value = true;
       setTimeout(() => {
         router.push({
@@ -68,7 +68,7 @@ const validarUsuario = async () => {
           }
         });
       }, 2000);
-      return; // Salir de la función
+      return; 
     }
 
     // Si la respuesta es OK, procesar el JSON

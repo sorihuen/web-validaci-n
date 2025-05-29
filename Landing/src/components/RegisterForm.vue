@@ -1,29 +1,62 @@
 <script setup>
+/**
+ * RegistrationForm Component
+ * 
+ * Componente Vue 3 para el registro de nuevos usuarios en el sistema de validación.
+ * Permite capturar datos del usuario, validar información y enviar registros al backend.
+ * 
+ * @author Sistema de Validación de Usuarios
+ * @version 1.0.0
+ * 
+ * Features:
+ * - Validación de teléfono en tiempo real
+ * - Subida y previsualización de imágenes
+ * - Integración con WhatsApp
+ * - Manejo de estados de carga
+ * - Validación de formularios
+ */
+
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-// Routing y estados del formulario
+// ==================== CONFIGURACIÓN Y RUTAS ====================
 const route = useRoute();
 const router = useRouter();
-const displayNotFoundMessage = ref(false);
+const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 
+// ==================== ESTADOS REACTIVOS ====================
+
+// Estados del formulario
+const displayNotFoundMessage = ref(false);
 const cedula = ref('');
 const nombre = ref('');
 const telefono = ref('');
 const ciudad = ref('');
 const otraCiudad = ref('');
+
+// Estados de la imagen
 const foto = ref(null);
 const fotoPreview = ref(null);
+
+// Estados de validación y errores
 const errorTelefono = ref(null);
 const errorFoto = ref(null);
+
+// Estados de proceso
 const registroExitoso = ref(false);
 const datosParaMensaje = ref(null);
 const loadingSubmit = ref(false);
 const loadingImage = ref(false);
 
+// ==================== CONFIGURACIÓN ====================
 const cities = ['Cali', 'Bogotá', 'Medellín', 'Otro'];
 
-// Inicialización de datos al cargar el componente
+// ==================== LIFECYCLE HOOKS ====================
+
+/**
+ * Inicializa el componente con datos de la ruta
+ * Valida que se haya proporcionado una cédula válida
+ */
 onMounted(() => {
   if (!route.query.cedula) {
     alert('No se proporcionó una cédula.');
@@ -36,25 +69,43 @@ onMounted(() => {
   }
 });
 
-// Validación del campo teléfono
+// ==================== VALIDACIONES ====================
+
+/**
+ * Valida el formato del número de teléfono
+ * @param {string} tel - Número de teléfono a validar
+ * @returns {boolean} - True si es válido
+ * 
+ * Reglas:
+ * - Solo números
+ * - Exactamente 10 dígitos
+ * - Campo obligatorio
+ */
 const validarTelefono = (tel) => {
   const regexSoloNumeros = /^[0-9]+$/;
+  
   if (!tel || tel.trim() === '') {
     errorTelefono.value = 'El teléfono es obligatorio.';
     return false;
   }
+  
   if (!regexSoloNumeros.test(tel)) {
     errorTelefono.value = 'El teléfono debe contener solo números.';
     return false;
   }
+  
   if (tel.length !== 10) {
     errorTelefono.value = 'El teléfono debe tener exactamente 10 dígitos.';
     return false;
   }
+  
   errorTelefono.value = null;
   return true;
 };
 
+/**
+ * Valida teléfono en tiempo real mientras el usuario escribe
+ */
 const validarTelefonoAlEscribir = () => {
   if (telefono.value) {
     validarTelefono(telefono.value);
@@ -63,16 +114,24 @@ const validarTelefonoAlEscribir = () => {
   }
 };
 
-// Procesamiento de la imagen para vista previa
+// ==================== MANEJO DE ARCHIVOS ====================
+
+/**
+ * Procesa la imagen seleccionada y genera vista previa
+ * @param {Event} event - Evento del input file
+ */
 const cargarFoto = (event) => {
   const file = event.target.files[0];
+  
   if (file) {
     errorFoto.value = null;
     const reader = new FileReader();
+    
     reader.onload = (e) => {
       fotoPreview.value = e.target.result;
       foto.value = file;
     };
+    
     reader.readAsDataURL(file);
   } else {
     fotoPreview.value = null;
@@ -80,24 +139,15 @@ const cargarFoto = (event) => {
   }
 };
 
-// Envío del formulario
-const registrarUsuario = async () => {
-  const telefonoValido = validarTelefono(telefono.value);
+// ==================== API CALLS ====================
 
-  if (!fotoPreview.value) {
-    errorFoto.value = 'Debes seleccionar una foto.';
-  } else {
-    errorFoto.value = null;
-  }
-
-  if (!telefonoValido || !fotoPreview.value) return;
-
-  loadingSubmit.value = true;
-  await enviarDatosAlBackend();
-  loadingSubmit.value = false;
-};
-
-// Lógica para enviar los datos al backend
+/**
+ * Envía los datos del usuario al backend
+ * @returns {Promise<void>}
+ * 
+ * Endpoint: POST /api/dinamic-db/report/{cedula}/assesmentDEV
+ * Headers: Authorization con token, Content-Type JSON
+ */
 const enviarDatosAlBackend = async () => {
   const finalCity = ciudad.value === 'Otro' ? otraCiudad.value : ciudad.value;
 
@@ -114,7 +164,7 @@ const enviarDatosAlBackend = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token 790cfdfb568c8ca697c72f52d8fab5af63ede025',
+        'Authorization': `Token ${API_TOKEN}`,
       },
       body: JSON.stringify(formData)
     });
@@ -138,17 +188,55 @@ const enviarDatosAlBackend = async () => {
   }
 };
 
-// Simulación de subida de imagen
+// ==================== PROCESAMIENTO DE FORMULARIO ====================
+
+/**
+ * Maneja el envío del formulario de registro
+ * Valida todos los campos antes de enviar
+ */
+const registrarUsuario = async () => {
+  const telefonoValido = validarTelefono(telefono.value);
+
+  if (!fotoPreview.value) {
+    errorFoto.value = 'Debes seleccionar una foto.';
+  } else {
+    errorFoto.value = null;
+  }
+
+  if (!telefonoValido || !fotoPreview.value) return;
+
+  loadingSubmit.value = true;
+  await enviarDatosAlBackend();
+  loadingSubmit.value = false;
+};
+
+// ==================== UTILIDADES ====================
+
+/**
+ * Genera URL temporal simulada para la imagen
+ * @param {string} base64Imagen - Imagen en formato base64
+ * @returns {Promise<string>} - URL temporal de la imagen
+ * 
+ * Nota: Función de simulación, en producción se debe reemplazar
+ * por el servicio real de almacenamiento de imágenes
+ */
 async function generarUrlTemporalParaImagen(base64Imagen) {
   await new Promise(resolve => setTimeout(resolve, 1500));
+  
   if (!base64Imagen || typeof base64Imagen !== 'string' || !base64Imagen.startsWith('data:image')) {
     throw new Error("Formato inválido.");
   }
+  
   const nombreArchivoSimulado = `imagen_${Date.now()}.png`;
   return `https://url-generada.com/uploads/${nombreArchivoSimulado}`;
 }
 
-// Construcción del mensaje y redirección a WhatsApp
+// ==================== INTEGRACIÓN WHATSAPP ====================
+
+/**
+ * Procesa los datos y redirige a WhatsApp con mensaje prellenado
+ * Incluye procesamiento de imagen y construcción del mensaje
+ */
 const procederConWhatsAppYRedirigir = async () => {
   if (!datosParaMensaje.value) {
     alert('No hay datos para el mensaje. Redirigiendo...');
@@ -182,10 +270,12 @@ const procederConWhatsAppYRedirigir = async () => {
   }, 500);
 };
 </script>
+
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
     <div class="w-full max-w-lg bg-white shadow-2xl rounded-2xl overflow-hidden">
-      <!-- Header con gradiente -->
+      
+      <!-- Header Section -->
       <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
         <div class="text-center">
           <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-3">
@@ -199,7 +289,8 @@ const procederConWhatsAppYRedirigir = async () => {
       </div>
 
       <div class="p-8">
-        <!-- Mensaje de usuario no encontrado -->
+        
+        <!-- Not Found Message -->
         <div v-if="displayNotFoundMessage" 
              class="mb-6 bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-500 p-4 rounded-lg shadow-sm">
           <div class="flex items-center">
@@ -215,10 +306,11 @@ const procederConWhatsAppYRedirigir = async () => {
           </div>
         </div>
 
-        <!-- Formulario de registro -->
+        <!-- Registration Form -->
         <div v-if="!registroExitoso">
           <form @submit.prevent="registrarUsuario" class="space-y-6">
-            <!-- Campo: Cédula (solo lectura) -->
+            
+            <!-- Cedula Field (Read-only) -->
             <div class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +326,7 @@ const procederConWhatsAppYRedirigir = async () => {
               />
             </div>
 
-            <!-- Campo: Nombre completo -->
+            <!-- Full Name Field -->
             <div class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,7 +342,7 @@ const procederConWhatsAppYRedirigir = async () => {
               />
             </div>
 
-            <!-- Campo: Teléfono -->
+            <!-- Phone Field with Validation -->
             <div class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +365,7 @@ const procederConWhatsAppYRedirigir = async () => {
               </div>
             </div>
 
-            <!-- Campo: Ciudad -->
+            <!-- City Selection -->
             <div class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,7 +384,7 @@ const procederConWhatsAppYRedirigir = async () => {
               </select>
             </div>
 
-            <!-- Campo: Otra ciudad -->
+            <!-- Custom City Field (Conditional) -->
             <div v-if="ciudad === 'Otro'" class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,7 +400,7 @@ const procederConWhatsAppYRedirigir = async () => {
               />
             </div>
 
-            <!-- Campo: Foto -->
+            <!-- Photo Upload Field -->
             <div class="space-y-2">
               <label class="flex items-center text-sm font-semibold text-gray-700">
                 <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,16 +409,14 @@ const procederConWhatsAppYRedirigir = async () => {
                 </svg>
                 Foto (obligatoria)
               </label>
-              <div class="relative">
-                <input 
-                  type="file" 
-                  accept="image/*;capture=camera" 
-                  @change="cargarFoto" 
-                  class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600 file:transition-colors file:duration-200" 
-                />
-              </div>
+              <input 
+                type="file" 
+                accept="image/*;capture=camera" 
+                @change="cargarFoto" 
+                class="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600 file:transition-colors file:duration-200" 
+              />
               
-              <!-- Vista previa de la foto -->
+              <!-- Photo Preview -->
               <div v-if="fotoPreview" class="flex justify-center mt-4">
                 <div class="relative">
                   <img :src="fotoPreview" alt="Vista previa" class="h-24 w-24 object-cover rounded-full border-4 border-white shadow-lg" />
@@ -338,6 +428,7 @@ const procederConWhatsAppYRedirigir = async () => {
                 </div>
               </div>
               
+              <!-- Photo Error Message -->
               <div v-if="errorFoto" class="flex items-center space-x-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -346,7 +437,7 @@ const procederConWhatsAppYRedirigir = async () => {
               </div>
             </div>
 
-            <!-- Botón de envío -->
+            <!-- Submit Button -->
             <button 
               type="submit" 
               :disabled="loadingSubmit" 
@@ -369,7 +460,7 @@ const procederConWhatsAppYRedirigir = async () => {
           </form>
         </div>
 
-        <!-- Mensaje de éxito -->
+        <!-- Success State -->
         <div v-else class="text-center py-8">
           <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
             <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -401,7 +492,7 @@ const procederConWhatsAppYRedirigir = async () => {
           </button>
         </div>
 
-        <!-- Información de seguridad -->
+        <!-- Security Notice -->
         <div class="mt-8 text-center">
           <div class="inline-flex items-center justify-center space-x-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-full">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
