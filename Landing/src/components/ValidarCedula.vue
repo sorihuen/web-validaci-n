@@ -1,17 +1,13 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { getUserByCedula } from '../services/api';
 
 const router = useRouter();
 const cedula = ref('');
 const loading = ref(false);
 const noEncontrado = ref(false);
 const errorCedula = ref(null);
-const API_TOKEN = import.meta.env.VITE_API_TOKEN;
-
-const headers = {
- 'Authorization': `Token ${API_TOKEN}`,
-};
 
 /**
  * Valida el formato de un número de cédula.
@@ -52,27 +48,7 @@ const validarUsuario = async () => {
   loading.value = true;
 
   try {
-    const res = await fetch(`/api/dinamic-db/report/${cedula.value}/assesmentDEV`, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!res.ok) {
-      noEncontrado.value = true;
-      setTimeout(() => {
-        router.push({
-          name: 'RegisterForm',
-          query: { 
-            cedula: cedula.value, 
-            source: 'validationNotFound' 
-          }
-        });
-      }, 2000);
-      return; 
-    }
-
-    // Si la respuesta es OK, procesar el JSON
-    const data = await res.json();
+    const data = await getUserByCedula(cedula.value);
 
     // Verificar si 'data.result' existe y tiene elementos
     if (data.result && data.result.length > 0) {
@@ -92,11 +68,24 @@ const validarUsuario = async () => {
         });
       }, 2000);
     }
-
   } catch (error) {
-    // Errores de red u otros
-    console.error(error);
-    alert('Hubo un problema al conectar con el servidor.');
+    if (error.status === 404 || error.status === 400) {
+      // Usuario no encontrado
+      noEncontrado.value = true;
+      setTimeout(() => {
+        router.push({
+          name: 'RegisterForm',
+          query: { 
+            cedula: cedula.value, 
+            source: 'validationNotFound' 
+          }
+        });
+      }, 2000);
+    } else {
+      // Otros errores
+      console.error(error);
+      alert('Hubo un problema al conectar con el servidor.');
+    }
   } finally {
     loading.value = false;
   }

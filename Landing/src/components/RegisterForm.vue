@@ -22,7 +22,7 @@ import { useRoute, useRouter } from 'vue-router';
 // ==================== CONFIGURACIÓN Y RUTAS ====================
 const route = useRoute();
 const router = useRouter();
-const API_TOKEN = import.meta.env.VITE_API_TOKEN;
+import { registerUser } from '../services/api';
 
 // ==================== ESTADOS REACTIVOS ====================
 
@@ -160,28 +160,16 @@ const enviarDatosAlBackend = async () => {
   };
 
   try {
-    const res = await fetch(`/api/dinamic-db/report/${cedula.value}/assesmentDEV`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${API_TOKEN}`,
-      },
-      body: JSON.stringify(formData)
-    });
-
-    if (res.ok) {
-      datosParaMensaje.value = {
-        cedula: cedula.value,
-        nombre: nombre.value,
-        telefono: telefono.value,
-        ciudad: finalCity
-      };
-      registroExitoso.value = true;
-      displayNotFoundMessage.value = false;
-    } else {
-      const errorData = await res.json().catch(() => ({ message: 'Error desconocido' }));
-      alert(`Error al registrar: ${errorData.message || res.statusText}`);
-    }
+    await registerUser(formData);
+    
+    datosParaMensaje.value = {
+      cedula: cedula.value,
+      nombre: nombre.value,
+      telefono: telefono.value,
+      ciudad: finalCity
+    };
+    registroExitoso.value = true;
+    displayNotFoundMessage.value = false;
   } catch (err) {
     console.error('Error de conexión:', err);
     alert('Error de conexión al enviar los datos.');
