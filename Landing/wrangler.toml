@@ -1,5 +1,13 @@
-name = "landing"               
-compatibility_date = "2025-05-29"    
+name = "landing"
+compatibility_date = "2025-05-29"
 
-[assets]
-directory = "./dist"                 
+# Configuración para Pages Functions
+pages_build_output_dir = "dist"
+
+# Variables de entorno (opcional)
+[env.production.vars]
+API_BASE_URL = "https://botai.smartdataautomation.com"
+
+# Configuración de assets (ya no es necesaria con pages_build_output_dir)
+# [assets]
+# directory = "./dist"
